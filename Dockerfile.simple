@@ -1,0 +1,19 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Install dependencies
+COPY package.json ./
+RUN npm install
+
+# Copy source
+COPY tsconfig.json ./
+COPY src ./src
+
+# Build TypeScript
+RUN npm run build
+
+EXPOSE 3000
+
+# Run the v2 server
+CMD ["node", "dist/server.js"]
