@@ -83,15 +83,23 @@ const tools = [
     inputSchema: {
       type: "object",
       properties: {
-        limit: { type: "number" },
-        skip: { type: "number" },
-        fromDate: { type: "string" },
-        toDate: { type: "string" },
-        userId: { type: "string" },
-        mine: { type: "boolean" },
-        keyword: { type: "string" },
-        organizers: { type: "array", items: { type: "string" } },
-        participants: { type: "array", items: { type: "string" } },
+        limit: { type: "number", description: "Maximum number of results" },
+        skip: { type: "number", description: "Number of results to skip" },
+        fromDate: { type: "string", description: "Start date filter" },
+        toDate: { type: "string", description: "End date filter" },
+        userId: { type: "string", description: "Filter by user ID" },
+        mine: { type: "boolean", description: "Only my transcripts" },
+        keyword: { type: "string", description: "Keyword to search" },
+        organizers: { 
+          type: "array", 
+          items: { type: "string" },
+          description: "Filter by organizer emails"
+        },
+        participants: { 
+          type: "array", 
+          items: { type: "string" },
+          description: "Filter by participant emails"
+        },
       },
     },
   },
@@ -101,7 +109,7 @@ const tools = [
     inputSchema: {
       type: "object",
       properties: {
-        transcriptId: { type: "string" },
+        transcriptId: { type: "string", description: "The transcript ID" },
       },
       required: ["transcriptId"],
     },
@@ -112,7 +120,7 @@ const tools = [
     inputSchema: {
       type: "object",
       properties: {
-        transcriptId: { type: "string" },
+        transcriptId: { type: "string", description: "The transcript ID" },
       },
       required: ["transcriptId"],
     },
@@ -123,7 +131,7 @@ const tools = [
     inputSchema: {
       type: "object",
       properties: {
-        transcriptId: { type: "string" },
+        transcriptId: { type: "string", description: "The transcript ID" },
       },
       required: ["transcriptId"],
     },
@@ -134,7 +142,7 @@ const tools = [
     inputSchema: {
       type: "object",
       properties: {
-        transcriptId: { type: "string" },
+        transcriptId: { type: "string", description: "The transcript ID" },
       },
       required: ["transcriptId"],
     },
@@ -145,7 +153,7 @@ const tools = [
     inputSchema: {
       type: "object",
       properties: {
-        transcriptId: { type: "string" },
+        transcriptId: { type: "string", description: "The transcript ID" },
       },
       required: ["transcriptId"],
     },
@@ -156,12 +164,12 @@ const tools = [
     inputSchema: {
       type: "object",
       properties: {
-        keyword: { type: "string" },
-        scope: { type: "string", enum: ["title", "sentences", "all"] },
-        limit: { type: "number" },
-        skip: { type: "number" },
-        fromDate: { type: "string" },
-        toDate: { type: "string" },
+        keyword: { type: "string", description: "Keyword to search for" },
+        scope: { type: "string", enum: ["title", "sentences", "all"], description: "Search scope" },
+        limit: { type: "number", description: "Maximum results" },
+        skip: { type: "number", description: "Results to skip" },
+        fromDate: { type: "string", description: "Start date" },
+        toDate: { type: "string", description: "End date" },
       },
       required: ["keyword"],
     },
@@ -172,10 +180,17 @@ const tools = [
     inputSchema: {
       type: "object",
       properties: {
-        url: { type: "string" },
-        title: { type: "string" },
-        attendees: { type: "array", items: { type: "string" } },
-        webhook: { type: "string" },
+        url: { type: "string", description: "URL of the audio file" },
+        title: { type: "string", description: "Title for the transcription" },
+        attendees: { 
+          type: "array", 
+          description: "List of attendee email addresses",
+          items: { 
+            type: "string",
+            description: "Attendee email address"
+          }
+        },
+        webhook: { type: "string", description: "Webhook URL for notifications" },
       },
       required: ["url", "title"],
     },
@@ -186,8 +201,8 @@ const tools = [
     inputSchema: {
       type: "object",
       properties: {
-        meetingLink: { type: "string" },
-        title: { type: "string" },
+        meetingLink: { type: "string", description: "Meeting URL" },
+        title: { type: "string", description: "Meeting title" },
       },
       required: ["meetingLink"],
     },
@@ -198,7 +213,7 @@ const tools = [
     inputSchema: {
       type: "object",
       properties: {
-        transcriptId: { type: "string" },
+        transcriptId: { type: "string", description: "The transcript ID to delete" },
       },
       required: ["transcriptId"],
     },
@@ -209,8 +224,8 @@ const tools = [
     inputSchema: {
       type: "object",
       properties: {
-        transcriptId: { type: "string" },
-        title: { type: "string" },
+        transcriptId: { type: "string", description: "The transcript ID" },
+        title: { type: "string", description: "New title" },
       },
       required: ["transcriptId", "title"],
     },
@@ -221,8 +236,8 @@ const tools = [
     inputSchema: {
       type: "object",
       properties: {
-        transcriptId: { type: "string" },
-        privacy: { type: "string", enum: ["link", "owner", "participants", "teammatesandparticipants", "teammates"] },
+        transcriptId: { type: "string", description: "The transcript ID" },
+        privacy: { type: "string", enum: ["link", "owner", "participants", "teammatesandparticipants", "teammates"], description: "Privacy setting" },
       },
       required: ["transcriptId", "privacy"],
     },
@@ -233,12 +248,20 @@ const tools = [
     inputSchema: {
       type: "object",
       properties: {
-        transcriptId: { type: "string" },
-        startTime: { type: "number" },
-        endTime: { type: "number" },
-        name: { type: "string" },
-        summary: { type: "string" },
-        visibility: { type: "array", items: { type: "string", enum: ["public", "team", "participants"] } },
+        transcriptId: { type: "string", description: "The transcript ID" },
+        startTime: { type: "number", description: "Start time in seconds" },
+        endTime: { type: "number", description: "End time in seconds" },
+        name: { type: "string", description: "Soundbite name" },
+        summary: { type: "string", description: "Soundbite summary" },
+        visibility: { 
+          type: "array", 
+          description: "Visibility settings",
+          items: { 
+            type: "string", 
+            enum: ["public", "team", "participants"],
+            description: "Visibility option"
+          }
+        },
       },
       required: ["transcriptId", "startTime", "endTime"],
     },
@@ -249,10 +272,10 @@ const tools = [
     inputSchema: {
       type: "object",
       properties: {
-        transcriptId: { type: "string" },
-        appId: { type: "string" },
-        limit: { type: "number" },
-        skip: { type: "number" },
+        transcriptId: { type: "string", description: "Filter by transcript ID" },
+        appId: { type: "string", description: "Filter by app ID" },
+        limit: { type: "number", description: "Maximum results" },
+        skip: { type: "number", description: "Results to skip" },
       },
     },
   },
@@ -662,7 +685,7 @@ async function handleMcpRequest(request: any): Promise<any> {
       case "initialize":
         result = {
           protocolVersion: "2024-11-05",
-          serverInfo: { name: "fireflies-mcp-server", version: "2.0.0" },
+          serverInfo: { name: "fireflies-mcp-server", version: "2.0.1" },
           capabilities: { tools: {} },
         };
         break;
@@ -755,19 +778,19 @@ app.post("/messages", async (req: Request, res: Response) => {
 
 // Health check
 app.get("/health", (req: Request, res: Response) => {
-  res.json({ status: "ok", sessions: sessions.size, version: "2.0.0" });
+  res.json({ status: "ok", sessions: sessions.size, version: "2.0.1" });
 });
 
 // Root endpoint
 app.get("/", (req: Request, res: Response) => {
   res.json({
     name: "Fireflies.ai MCP Server",
-    version: "2.0.0",
+    version: "2.0.1",
     endpoints: { sse: "/sse", messages: "/messages", health: "/health" },
     tools: tools.map((t) => t.name),
   });
 });
 
 app.listen(PORT, () => {
-  console.log(`Fireflies.ai MCP Server v2.0.0 running on port ${PORT}`);
+  console.log(`Fireflies.ai MCP Server v2.0.1 running on port ${PORT}`);
 });
