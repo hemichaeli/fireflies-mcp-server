@@ -35,96 +35,224 @@ async function graphqlRequest(query: string, variables?: Record<string, any>): P
   return result.data;
 }
 
-// Tool definitions
+// Tool definitions with OpenAI-compatible schemas (arrays must have items)
 const tools = [
   {
     name: "get_user",
-    description: "Get information about the authenticated user including email, name, integrations, and minutes consumed",
+    description: "Get user info (email, name, integrations, minutes consumed, admin status)",
     inputSchema: {
       type: "object",
       properties: {
-        userId: { type: "string", description: "Optional user ID. If not provided, returns current authenticated user" },
+        userId: { type: "string", description: "Optional user ID" },
       },
     },
   },
   {
-    name: "list_transcripts",
-    description: "List all meeting transcripts with optional filters",
+    name: "get_users",
+    description: "Get all team users with details",
+    inputSchema: {
+      type: "object",
+      properties: {},
+    },
+  },
+  {
+    name: "get_user_groups",
+    description: "Get user groups with members",
     inputSchema: {
       type: "object",
       properties: {
-        limit: { type: "number", description: "Maximum number of transcripts to return (default: 20)" },
-        skip: { type: "number", description: "Number of transcripts to skip for pagination" },
+        mine: { type: "boolean", description: "Only groups user belongs to" },
+      },
+    },
+  },
+  {
+    name: "set_user_role",
+    description: "Set user role (admin/user/viewer)",
+    inputSchema: {
+      type: "object",
+      properties: {
+        userId: { type: "string" },
+        role: { type: "string", enum: ["admin", "user", "viewer"] },
+      },
+      required: ["userId", "role"],
+    },
+  },
+  {
+    name: "list_transcripts",
+    description: "List transcripts with filters (date, organizer, participants, keywords)",
+    inputSchema: {
+      type: "object",
+      properties: {
+        limit: { type: "number" },
+        skip: { type: "number" },
+        fromDate: { type: "string" },
+        toDate: { type: "string" },
+        userId: { type: "string" },
+        mine: { type: "boolean" },
+        keyword: { type: "string" },
+        organizers: { type: "array", items: { type: "string" } },
+        participants: { type: "array", items: { type: "string" } },
       },
     },
   },
   {
     name: "get_transcript",
-    description: "Get detailed information about a specific transcript including full text and speakers",
+    description: "Get transcript details with speakers and URLs",
     inputSchema: {
       type: "object",
       properties: {
-        transcriptId: { type: "string", description: "The ID of the transcript to retrieve" },
+        transcriptId: { type: "string" },
       },
       required: ["transcriptId"],
     },
   },
   {
     name: "get_transcript_sentences",
-    description: "Get the transcript sentences with speaker identification",
+    description: "Get sentences with speaker ID, timestamps, AI filters",
     inputSchema: {
       type: "object",
       properties: {
-        transcriptId: { type: "string", description: "The ID of the transcript" },
+        transcriptId: { type: "string" },
       },
       required: ["transcriptId"],
     },
   },
   {
     name: "get_meeting_summary",
-    description: "Get AI-generated summary, action items, and key points from a meeting",
+    description: "Get AI summary, action items, keywords, topics",
     inputSchema: {
       type: "object",
       properties: {
-        transcriptId: { type: "string", description: "The ID of the transcript" },
+        transcriptId: { type: "string" },
+      },
+      required: ["transcriptId"],
+    },
+  },
+  {
+    name: "get_meeting_attendees",
+    description: "Get attendee info with join/leave times",
+    inputSchema: {
+      type: "object",
+      properties: {
+        transcriptId: { type: "string" },
+      },
+      required: ["transcriptId"],
+    },
+  },
+  {
+    name: "get_meeting_analytics",
+    description: "Get talk time, sentiment, question count",
+    inputSchema: {
+      type: "object",
+      properties: {
+        transcriptId: { type: "string" },
       },
       required: ["transcriptId"],
     },
   },
   {
     name: "search_transcripts",
-    description: "Search through transcripts by keyword",
+    description: "Search by keyword with scope (title/sentences/all)",
     inputSchema: {
       type: "object",
       properties: {
-        keyword: { type: "string", description: "Keyword to search for in transcripts" },
-        limit: { type: "number", description: "Maximum number of results (default: 10)" },
+        keyword: { type: "string" },
+        scope: { type: "string", enum: ["title", "sentences", "all"] },
+        limit: { type: "number" },
+        skip: { type: "number" },
+        fromDate: { type: "string" },
+        toDate: { type: "string" },
       },
       required: ["keyword"],
     },
   },
   {
     name: "upload_audio",
-    description: "Upload an audio file URL for transcription",
+    description: "Upload audio URL for transcription",
     inputSchema: {
       type: "object",
       properties: {
-        url: { type: "string", description: "URL of the audio file to transcribe" },
-        title: { type: "string", description: "Title for the transcription" },
-        webhook: { type: "string", description: "Optional webhook URL to notify when transcription is complete" },
+        url: { type: "string" },
+        title: { type: "string" },
+        attendees: { type: "array", items: { type: "string" } },
+        webhook: { type: "string" },
       },
       required: ["url", "title"],
     },
   },
   {
-    name: "get_ai_apps",
-    description: "Get AI Apps outputs for a transcript or all transcripts",
+    name: "add_to_live",
+    description: "Add bot to live meeting (Zoom/Meet/Teams)",
     inputSchema: {
       type: "object",
       properties: {
-        transcriptId: { type: "string", description: "Optional transcript ID to filter results" },
-        appId: { type: "string", description: "Optional app ID to filter results" },
-        limit: { type: "number", description: "Maximum number of results" },
+        meetingLink: { type: "string" },
+        title: { type: "string" },
+      },
+      required: ["meetingLink"],
+    },
+  },
+  {
+    name: "delete_transcript",
+    description: "Delete transcript permanently",
+    inputSchema: {
+      type: "object",
+      properties: {
+        transcriptId: { type: "string" },
+      },
+      required: ["transcriptId"],
+    },
+  },
+  {
+    name: "update_meeting_title",
+    description: "Update meeting title",
+    inputSchema: {
+      type: "object",
+      properties: {
+        transcriptId: { type: "string" },
+        title: { type: "string" },
+      },
+      required: ["transcriptId", "title"],
+    },
+  },
+  {
+    name: "update_meeting_privacy",
+    description: "Update privacy (link/owner/participants/teammates)",
+    inputSchema: {
+      type: "object",
+      properties: {
+        transcriptId: { type: "string" },
+        privacy: { type: "string", enum: ["link", "owner", "participants", "teammatesandparticipants", "teammates"] },
+      },
+      required: ["transcriptId", "privacy"],
+    },
+  },
+  {
+    name: "create_soundbite",
+    description: "Create soundbite clip from transcript",
+    inputSchema: {
+      type: "object",
+      properties: {
+        transcriptId: { type: "string" },
+        startTime: { type: "number" },
+        endTime: { type: "number" },
+        name: { type: "string" },
+        summary: { type: "string" },
+        visibility: { type: "array", items: { type: "string", enum: ["public", "team", "participants"] } },
+      },
+      required: ["transcriptId", "startTime", "endTime"],
+    },
+  },
+  {
+    name: "get_ai_apps",
+    description: "Get AI Apps outputs for transcripts",
+    inputSchema: {
+      type: "object",
+      properties: {
+        transcriptId: { type: "string" },
+        appId: { type: "string" },
+        limit: { type: "number" },
+        skip: { type: "number" },
       },
     },
   },
@@ -151,12 +279,58 @@ async function executeTool(name: string, args: any): Promise<any> {
       return result.user;
     }
 
+    case "get_users": {
+      const query = `
+        query Users {
+          users {
+            id
+            email
+            name
+            integrations
+            is_admin
+          }
+        }
+      `;
+      const result = await graphqlRequest(query);
+      return result.users;
+    }
+
+    case "get_user_groups": {
+      const query = `
+        query UserGroups($mine: Boolean) {
+          userGroups(mine: $mine) {
+            id
+            name
+            members {
+              id
+              email
+              name
+            }
+          }
+        }
+      `;
+      const result = await graphqlRequest(query, { mine: args.mine });
+      return result.userGroups;
+    }
+
+    case "set_user_role": {
+      const query = `
+        mutation SetUserRole($userId: String!, $role: String!) {
+          setUserRole(user_id: $userId, role: $role) {
+            success
+          }
+        }
+      `;
+      const result = await graphqlRequest(query, { userId: args.userId, role: args.role });
+      return result.setUserRole;
+    }
+
     case "list_transcripts": {
       const limit = args.limit || 20;
       const skip = args.skip || 0;
       const query = `
-        query Transcripts($limit: Int, $skip: Int) {
-          transcripts(limit: $limit, skip: $skip) {
+        query Transcripts($limit: Int, $skip: Int, $userId: String, $mine: Boolean, $fromDate: Date, $toDate: Date) {
+          transcripts(limit: $limit, skip: $skip, user_id: $userId, mine: $mine, fromDate: $fromDate, toDate: $toDate) {
             id
             title
             date
@@ -167,8 +341,39 @@ async function executeTool(name: string, args: any): Promise<any> {
           }
         }
       `;
-      const result = await graphqlRequest(query, { limit, skip });
-      return result.transcripts;
+      const result = await graphqlRequest(query, { 
+        limit, 
+        skip, 
+        userId: args.userId, 
+        mine: args.mine,
+        fromDate: args.fromDate,
+        toDate: args.toDate
+      });
+      
+      let transcripts = result.transcripts || [];
+      
+      // Client-side filtering for organizers, participants, keyword
+      if (args.organizers?.length) {
+        transcripts = transcripts.filter((t: any) => 
+          args.organizers.some((org: string) => 
+            t.organizer_email?.toLowerCase().includes(org.toLowerCase())
+          )
+        );
+      }
+      if (args.participants?.length) {
+        transcripts = transcripts.filter((t: any) =>
+          args.participants.some((p: string) =>
+            t.participants?.some((tp: string) => tp.toLowerCase().includes(p.toLowerCase()))
+          )
+        );
+      }
+      if (args.keyword) {
+        transcripts = transcripts.filter((t: any) =>
+          t.title?.toLowerCase().includes(args.keyword.toLowerCase())
+        );
+      }
+      
+      return transcripts;
     }
 
     case "get_transcript": {
@@ -210,6 +415,13 @@ async function executeTool(name: string, args: any): Promise<any> {
               end_time
               speaker_id
               speaker_name
+              ai_filters {
+                task
+                pricing
+                metric
+                question
+                date_and_time
+              }
             }
           }
         }
@@ -239,11 +451,55 @@ async function executeTool(name: string, args: any): Promise<any> {
       return result.transcript;
     }
 
-    case "search_transcripts": {
-      const limit = args.limit || 10;
+    case "get_meeting_attendees": {
       const query = `
-        query SearchTranscripts($keyword: String!, $limit: Int) {
-          transcripts(limit: $limit) {
+        query MeetingAttendees($transcriptId: String!) {
+          transcript(id: $transcriptId) {
+            id
+            title
+            meeting_attendees {
+              displayName
+              email
+              phoneNumber
+              name
+              location
+            }
+          }
+        }
+      `;
+      const result = await graphqlRequest(query, { transcriptId: args.transcriptId });
+      return result.transcript;
+    }
+
+    case "get_meeting_analytics": {
+      const query = `
+        query MeetingAnalytics($transcriptId: String!) {
+          transcript(id: $transcriptId) {
+            id
+            title
+            speaker_analytics {
+              speaker_id
+              speaker_name
+              talk_time
+              word_count
+              sentiment
+              questions_asked
+            }
+          }
+        }
+      `;
+      const result = await graphqlRequest(query, { transcriptId: args.transcriptId });
+      return result.transcript;
+    }
+
+    case "search_transcripts": {
+      const limit = args.limit || 20;
+      const skip = args.skip || 0;
+      const scope = args.scope || "all";
+      
+      const query = `
+        query SearchTranscripts($limit: Int, $skip: Int, $fromDate: Date, $toDate: Date) {
+          transcripts(limit: $limit, skip: $skip, fromDate: $fromDate, toDate: $toDate) {
             id
             title
             date
@@ -252,12 +508,21 @@ async function executeTool(name: string, args: any): Promise<any> {
           }
         }
       `;
-      // Note: Fireflies search is limited - we fetch and filter client-side
-      const result = await graphqlRequest(query, { keyword: args.keyword, limit: limit * 5 });
-      const filtered = result.transcripts.filter((t: any) => 
-        t.title?.toLowerCase().includes(args.keyword.toLowerCase())
-      ).slice(0, limit);
-      return filtered;
+      const result = await graphqlRequest(query, { 
+        limit: limit * 3, 
+        skip,
+        fromDate: args.fromDate,
+        toDate: args.toDate
+      });
+      
+      let filtered = result.transcripts || [];
+      if (scope === "title" || scope === "all") {
+        filtered = filtered.filter((t: any) =>
+          t.title?.toLowerCase().includes(args.keyword.toLowerCase())
+        );
+      }
+      
+      return filtered.slice(0, limit);
     }
 
     case "upload_audio": {
@@ -274,6 +539,9 @@ async function executeTool(name: string, args: any): Promise<any> {
         url: args.url,
         title: args.title,
       };
+      if (args.attendees?.length) {
+        input.attendees = args.attendees;
+      }
       if (args.webhook) {
         input.webhook = args.webhook;
       }
@@ -281,10 +549,82 @@ async function executeTool(name: string, args: any): Promise<any> {
       return result.uploadAudio;
     }
 
+    case "add_to_live": {
+      const query = `
+        mutation AddToLive($meetingLink: String!, $title: String) {
+          addToLive(meeting_link: $meetingLink, title: $title) {
+            success
+            message
+          }
+        }
+      `;
+      const result = await graphqlRequest(query, { meetingLink: args.meetingLink, title: args.title });
+      return result.addToLive;
+    }
+
+    case "delete_transcript": {
+      const query = `
+        mutation DeleteTranscript($transcriptId: String!) {
+          deleteTranscript(id: $transcriptId) {
+            success
+          }
+        }
+      `;
+      const result = await graphqlRequest(query, { transcriptId: args.transcriptId });
+      return result.deleteTranscript;
+    }
+
+    case "update_meeting_title": {
+      const query = `
+        mutation UpdateMeetingTitle($transcriptId: String!, $title: String!) {
+          updateTranscript(id: $transcriptId, title: $title) {
+            success
+          }
+        }
+      `;
+      const result = await graphqlRequest(query, { transcriptId: args.transcriptId, title: args.title });
+      return result.updateTranscript;
+    }
+
+    case "update_meeting_privacy": {
+      const query = `
+        mutation UpdateMeetingPrivacy($transcriptId: String!, $privacy: String!) {
+          updateTranscript(id: $transcriptId, privacy: $privacy) {
+            success
+          }
+        }
+      `;
+      const result = await graphqlRequest(query, { transcriptId: args.transcriptId, privacy: args.privacy });
+      return result.updateTranscript;
+    }
+
+    case "create_soundbite": {
+      const query = `
+        mutation CreateSoundbite($input: SoundbiteInput!) {
+          createSoundbite(input: $input) {
+            id
+            name
+            url
+          }
+        }
+      `;
+      const input: any = {
+        transcript_id: args.transcriptId,
+        start_time: args.startTime,
+        end_time: args.endTime,
+      };
+      if (args.name) input.name = args.name;
+      if (args.summary) input.summary = args.summary;
+      if (args.visibility?.length) input.visibility = args.visibility;
+      
+      const result = await graphqlRequest(query, { input });
+      return result.createSoundbite;
+    }
+
     case "get_ai_apps": {
       const query = `
-        query GetAIApps($transcriptId: String, $appId: String, $limit: Int) {
-          apps(transcript_id: $transcriptId, app_id: $appId, limit: $limit) {
+        query GetAIApps($transcriptId: String, $appId: String, $limit: Int, $skip: Int) {
+          apps(transcript_id: $transcriptId, app_id: $appId, limit: $limit, skip: $skip) {
             outputs {
               transcript_id
               user_id
@@ -301,6 +641,7 @@ async function executeTool(name: string, args: any): Promise<any> {
         transcriptId: args.transcriptId,
         appId: args.appId,
         limit: args.limit,
+        skip: args.skip,
       });
       return result.apps;
     }
@@ -321,7 +662,7 @@ async function handleMcpRequest(request: any): Promise<any> {
       case "initialize":
         result = {
           protocolVersion: "2024-11-05",
-          serverInfo: { name: "fireflies-mcp-server", version: "1.0.0" },
+          serverInfo: { name: "fireflies-mcp-server", version: "2.0.0" },
           capabilities: { tools: {} },
         };
         break;
@@ -414,19 +755,19 @@ app.post("/messages", async (req: Request, res: Response) => {
 
 // Health check
 app.get("/health", (req: Request, res: Response) => {
-  res.json({ status: "ok", sessions: sessions.size, version: "1.0.0" });
+  res.json({ status: "ok", sessions: sessions.size, version: "2.0.0" });
 });
 
 // Root endpoint
 app.get("/", (req: Request, res: Response) => {
   res.json({
     name: "Fireflies.ai MCP Server",
-    version: "1.0.0",
+    version: "2.0.0",
     endpoints: { sse: "/sse", messages: "/messages", health: "/health" },
     tools: tools.map((t) => t.name),
   });
 });
 
 app.listen(PORT, () => {
-  console.log(`Fireflies.ai MCP Server v1.0.0 running on port ${PORT}`);
+  console.log(`Fireflies.ai MCP Server v2.0.0 running on port ${PORT}`);
 });
